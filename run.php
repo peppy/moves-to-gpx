@@ -1,24 +1,35 @@
 <?
 date_default_timezone_set("UTC");
 
-$date = new DateTime();
+$filename = "output.gpx";
+$firstDate = new DateTime("2014-04-01");
+$date = new DateTime("2014-05-01");
+//$date = new DateTime(); <- for today's date
 
-$firstDate = new DateTime("2013-04-16");
+$segments = [];
+
+@unlink($filename);
 
 while ($date > $firstDate)
 {
 	$formattedDate = $date->format('Ymd');
 	$date->sub(new DateInterval("P1D"));
 
-	echo "$formattedDate...\n";
-	file_put_contents("$formattedDate.gpx", makeXml($formattedDate));
+	echo "Getting segments for $formattedDate (total " . count($segments) . ")...\n";
+	foreach (getSegments($formattedDate) as $s)
+		array_push($segments, $s);
 }
 
-function makeXml($date)
+file_put_contents($filename, makeXml($segments));
+
+function getSegments($date)
 {
-	$data = json_decode(file_get_contents("https://api.moves-app.com/api/v1/user/storyline/daily/$date?trackPoints=true&access_token=<insert access token>"));
+	$data = json_decode(file_get_contents("https://api.moves-app.com/api/v1/user/storyline/daily/$date?trackPoints=true&access_token=<<INSERT ACCESS TOKEN HERE>>"));
+	return $data[0]->segments;
+}
 
-
+function makeXml($segments)
+{
 	$xml = '<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 			<metadata>
 	        <link href="http://moves-to-gpx.ppy.sh">
@@ -26,9 +37,9 @@ function makeXml($date)
 	        </link>
 	    </metadata>
 	    <trk>
-        <name>' . $data[0]->date . '</name>';
+        <name>outpu</name>';
 
-	foreach ($data[0]->segments as $segment)
+	foreach ($segments as $segment)
 	{
 		$xml .=  "<trkseg>";
 		if ($segment->type == 'place')
